@@ -11,6 +11,7 @@ class MLService:
     def __init__(self):
         self.billing_model = None
         self.recom_model = None
+        self.clustering_model = None
         self.le_condition = None
         self.le_blood = None
         self.load_models()
@@ -20,6 +21,7 @@ class MLService:
         try:
             self.billing_model = joblib.load(os.path.join(MODELS_DIR, 'billing_pipeline.pkl'))
             self.recom_model = joblib.load(os.path.join(MODELS_DIR, 'recommendation_pipeline.pkl'))
+            self.clustering_model = joblib.load(os.path.join(MODELS_DIR, 'clustering_pipeline.pkl'))
             self.le_condition = joblib.load(os.path.join(MODELS_DIR, 'encoder_condition.pkl'))
             self.le_blood = joblib.load(os.path.join(MODELS_DIR, 'encoder_blood_type.pkl'))
             print("Successfully loaded ML models.")
@@ -36,7 +38,7 @@ class MLService:
           "Blood_Type": "O+"
         }
         """
-        if not self.billing_model or not self.le_condition or not self.le_blood:
+        if not self.billing_model or not self.le_condition or not self.le_blood or not self.clustering_model:
             raise ValueError("Models are not fully loaded.")
         
         age = float(data['Age'])
@@ -68,20 +70,33 @@ class MLService:
         }
         test_code = blood_type_rarity_map.get(blood_type, 1)
 
-        # 5. Prepare the input DataFrame (6 features)
-        features_for_billing_model = ['Age', 'Stay_Duration', 'Condition_Code', 'Test_Code', 'Blood_Type_Code', 'Health_Risk_Score']
+        # 5. Predict cluster using a dummy Billing Amount and Cost_Per_Day (since they are unknown)
+        cluster_pred = data.get('Cluster')
+        if cluster_pred is None:
+            clustering_df = pd.DataFrame([{
+                'Age': age,
+                'Billing Amount': 0.0,
+                'Stay_Duration': stay_duration,
+                'Cost_Per_Day': 0.0,
+                'Health_Risk_Score': health_risk_score
+            }])
+            cluster_pred = self.clustering_model.predict(clustering_df)[0]
+
+        # 6. Prepare the input DataFrame (7 features)
+        features_for_billing_model = ['Age', 'Stay_Duration', 'Condition_Code', 'Test_Code', 'Blood_Type_Code', 'Health_Risk_Score', 'Cluster']
         input_data = {
             'Age': age,
             'Stay_Duration': stay_duration,
             'Condition_Code': cond_code,
             'Test_Code': test_code,
             'Blood_Type_Code': blood_code,
-            'Health_Risk_Score': health_risk_score
+            'Health_Risk_Score': health_risk_score,
+            'Cluster': cluster_pred
         }
         
         input_df = pd.DataFrame([input_data], columns=features_for_billing_model)
 
-        # 6. Predict using the billing pipeline
+        # 7. Predict using the billing pipeline
         prediction = self.billing_model.predict(input_df)
         return float(prediction[0])
 
