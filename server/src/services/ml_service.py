@@ -1,0 +1,67 @@
+import os
+import joblib
+import pandas as pd
+
+# Define paths to models
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODELS_DIR = os.path.join(BASE_DIR, 'models')
+
+class MLService:
+    def __init__(self):
+        self.billing_model = None
+        self.recom_model = None
+        self.le_condition = None
+        self.le_blood = None
+        self.load_models()
+
+    def load_models(self):
+        """Loads all the necessary pickled models and encoders."""
+        try:
+            self.billing_model = joblib.load(os.path.join(MODELS_DIR, 'billing_pipeline.pkl'))
+            self.recom_model = joblib.load(os.path.join(MODELS_DIR, 'recommendation_pipeline.pkl'))
+            self.le_condition = joblib.load(os.path.join(MODELS_DIR, 'encoder_condition.pkl'))
+            self.le_blood = joblib.load(os.path.join(MODELS_DIR, 'encoder_blood_type.pkl'))
+            print("Successfully loaded ML models.")
+        except Exception as e:
+            print(f"Warning: Could not load ML models. Ensure .pkl files are in {MODELS_DIR}. Error: {e}")
+
+    def predict_billing(self, data):
+        """
+        Expects data to be a dictionary like:
+        {
+          "Age": 45,
+          "Billing Amount": 25000,
+          "Stay_Duration": 10,
+          "Cost_Per_Day": 2500,
+          "Health_Risk_Score": 4.5
+        }
+        """
+        if not self.billing_model:
+            raise ValueError("Billing model is not loaded.")
+        
+        input_df = pd.DataFrame([data])
+        prediction = self.billing_model.predict(input_df)
+        return float(prediction[0])
+
+    def recommend_blood(self, data):
+        """
+        Expects data to be a dictionary like:
+        {
+          "blood_type": "O+",
+          "age": 30,
+          "condition": "Cancer"
+        }
+        """
+        if not self.recom_model or not self.le_condition or not self.le_blood:
+            raise ValueError("Recommendation models are not loaded.")
+        
+        # Encoding string inputs using the saved label encoders
+        cond_code = self.le_condition.transform([data['condition']])[0]
+        blood_code = self.le_blood.transform([data['blood_type']])[0]
+
+        features = [[blood_code, data['age'], cond_code]]
+        res = self.recom_model.predict(features)
+        return int(res[0])
+
+# Expose a singleton instance
+ml_service = MLService()
