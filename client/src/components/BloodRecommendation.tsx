@@ -55,9 +55,8 @@ export default function BloodRecommendation() {
   };
 
   // Example conditions based on typical medical datasets.
-  const conditions = [
-    "Cancer", "Diabetes", "Heart Disease", "Anemia", "Trauma", "Surgery", "None"
-  ];
+  // Ensure these strictly match the LabelEncoder classes
+  const conditions = ["Arthritis", "Asthma", "Cancer", "Diabetes", "Hypertension", "Obesity"];
 
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 

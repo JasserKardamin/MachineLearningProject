@@ -56,7 +56,7 @@ export default function BillingPrediction() {
     }
   };
 
-  const conditions = ["Cancer", "Diabetes", "Heart Disease", "Anemia", "Trauma", "Surgery", "None"];
+  const conditions = ["Arthritis", "Asthma", "Cancer", "Diabetes", "Hypertension", "Obesity"];
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
   return (
