@@ -30,16 +30,49 @@ class MLService:
         Expects data to be a dictionary like:
         {
           "Age": 45,
-          "Billing Amount": 25000,
           "Stay_Duration": 10,
-          "Cost_Per_Day": 2500,
-          "Health_Risk_Score": 4.5
+          "Medical_Condition": "Cancer",
+          "Blood_Type": "O+"
         }
         """
-        if not self.billing_model:
-            raise ValueError("Billing model is not loaded.")
+        if not self.billing_model or not self.le_condition or not self.le_blood:
+            raise ValueError("Models are not fully loaded.")
         
-        input_df = pd.DataFrame([data])
+        age = float(data['Age'])
+        stay_duration = float(data['Stay_Duration'])
+        medical_condition = data['Medical_Condition']
+        blood_type = data['Blood_Type']
+
+        # 1. Derive Health Risk Score
+        health_risk_score = (age * stay_duration) / 100.0
+
+        # 2. Encode Medical Condition
+        cond_code = self.le_condition.transform([medical_condition])[0]
+
+        # 3. Encode Blood Type
+        blood_code = self.le_blood.transform([blood_type])[0]
+
+        # 4. Derive Test_Code based on rarity map
+        blood_type_rarity_map = {
+            'O+': 0, 'A+': 0, 'B+': 0, 'AB+': 1,
+            'O-': 1, 'A-': 1, 'B-': 1, 'AB-': 2
+        }
+        test_code = blood_type_rarity_map.get(blood_type, 1)
+
+        # 5. Prepare the input DataFrame (6 features)
+        features_for_billing_model = ['Age', 'Stay_Duration', 'Condition_Code', 'Test_Code', 'Blood_Type_Code', 'Health_Risk_Score']
+        input_data = {
+            'Age': age,
+            'Stay_Duration': stay_duration,
+            'Condition_Code': cond_code,
+            'Test_Code': test_code,
+            'Blood_Type_Code': blood_code,
+            'Health_Risk_Score': health_risk_score
+        }
+        
+        input_df = pd.DataFrame([input_data], columns=features_for_billing_model)
+
+        # 6. Predict using the billing pipeline
         prediction = self.billing_model.predict(input_df)
         return float(prediction[0])
 

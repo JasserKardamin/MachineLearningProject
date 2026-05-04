@@ -2,28 +2,29 @@ import { useState } from 'react';
 
 interface BillingData {
   Age: number | '';
-  'Billing Amount': number | '';
   Stay_Duration: number | '';
-  Cost_Per_Day: number | '';
-  Health_Risk_Score: number | '';
+  Medical_Condition: string;
+  Blood_Type: string;
 }
 
 export default function BillingPrediction() {
   const [formData, setFormData] = useState<BillingData>({
     Age: '',
-    'Billing Amount': '',
     Stay_Duration: '',
-    Cost_Per_Day: '',
-    Health_Risk_Score: ''
+    Medical_Condition: '',
+    Blood_Type: ''
   });
   
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value === '' ? '' : Number(value) }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: (name === 'Age' || name === 'Stay_Duration') ? (value === '' ? '' : Number(value)) : value 
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,41 +56,30 @@ export default function BillingPrediction() {
     }
   };
 
+  const conditions = ["Cancer", "Diabetes", "Heart Disease", "Anemia", "Trauma", "Surgery", "None"];
+  const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
   return (
     <div>
       <h2 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>Predict Patient Billing</h2>
       <form onSubmit={handleSubmit}>
-        <div className="input-group">
-          <label htmlFor="Age">Patient Age</label>
-          <input
-            type="number"
-            id="Age"
-            name="Age"
-            className="input-control"
-            value={formData.Age}
-            onChange={handleChange}
-            placeholder="e.g. 45"
-            required
-            min="0"
-          />
-        </div>
-
-        <div className="input-group">
-          <label htmlFor="Billing Amount">Current Billing Amount ($)</label>
-          <input
-            type="number"
-            id="Billing Amount"
-            name="Billing Amount"
-            className="input-control"
-            value={formData['Billing Amount']}
-            onChange={handleChange}
-            placeholder="e.g. 25000"
-            required
-            min="0"
-          />
-        </div>
-
+        
         <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="input-group" style={{ flex: 1 }}>
+            <label htmlFor="Age">Patient Age</label>
+            <input
+              type="number"
+              id="Age"
+              name="Age"
+              className="input-control"
+              value={formData.Age}
+              onChange={handleChange}
+              placeholder="e.g. 45"
+              required
+              min="0"
+            />
+          </div>
+
           <div className="input-group" style={{ flex: 1 }}>
             <label htmlFor="Stay_Duration">Stay Duration (Days)</label>
             <input
@@ -104,38 +94,42 @@ export default function BillingPrediction() {
               min="0"
             />
           </div>
-
-          <div className="input-group" style={{ flex: 1 }}>
-            <label htmlFor="Cost_Per_Day">Cost Per Day ($)</label>
-            <input
-              type="number"
-              id="Cost_Per_Day"
-              name="Cost_Per_Day"
-              className="input-control"
-              value={formData.Cost_Per_Day}
-              onChange={handleChange}
-              placeholder="e.g. 2500"
-              required
-              min="0"
-            />
-          </div>
         </div>
 
         <div className="input-group">
-          <label htmlFor="Health_Risk_Score">Health Risk Score (0-10)</label>
-          <input
-            type="number"
-            id="Health_Risk_Score"
-            name="Health_Risk_Score"
+          <label htmlFor="Medical_Condition">Medical Condition</label>
+          <select
+            id="Medical_Condition"
+            name="Medical_Condition"
             className="input-control"
-            value={formData.Health_Risk_Score}
+            value={formData.Medical_Condition}
             onChange={handleChange}
-            placeholder="e.g. 4.5"
             required
-            step="0.1"
-            min="0"
-            max="10"
-          />
+            style={{ appearance: 'none', backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
+          >
+            <option value="" disabled>Select condition...</option>
+            {conditions.map(cond => (
+              <option key={cond} value={cond}>{cond}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="input-group">
+          <label htmlFor="Blood_Type">Blood Type</label>
+          <select
+            id="Blood_Type"
+            name="Blood_Type"
+            className="input-control"
+            value={formData.Blood_Type}
+            onChange={handleChange}
+            required
+            style={{ appearance: 'none', backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
+          >
+            <option value="" disabled>Select blood type...</option>
+            {bloodTypes.map(bt => (
+              <option key={bt} value={bt}>{bt}</option>
+            ))}
+          </select>
         </div>
 
         <button type="submit" className="btn" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
